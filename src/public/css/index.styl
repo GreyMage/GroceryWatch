@@ -1,0 +1,41 @@
+/*
+@css {
+	@import url(http://fonts.googleapis.com/css?family=Roboto);
+	@import url(http://fonts.googleapis.com/css?family=Bangers);
+	@import url(http://fonts.googleapis.com/css?family=Patrick+Hand);
+}
+*/
+
+vendor(prop, args)
+  -webkit-{prop} args
+  -moz-{prop} args
+  -o-{prop} args
+  {prop} args
+
+theme-color = #5E9732
+font-color = #424242
+
+wallpaper-color = lighten(theme-color,80%)
+back-color = lighten(theme-color,50%)
+primary-font = 'Roboto', sans-serif 
+
+body
+	background-color wallpaper-color
+	color font-color
+	font-family primary-font
+	
+#container
+	width 960px
+	margin 0 auto
+	
+	.item
+		float left
+		height 200px
+		width 50%
+		margin 10px 0
+		
+		.pad
+			margin 0 10px
+			background-color back-color
+			border-radius 10px
+			height 100%
