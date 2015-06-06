@@ -13,12 +13,12 @@ var schedule = require('node-schedule');
 // Mail Setup
 var nodemailer = require('nodemailer');
 var smtpTransport = require('nodemailer-smtp-transport');
-var transport = nodemailer.createTransport(smtpTransport(_config.smtpTransport));
+var transport = nodemailer.createTransport(smtpTransport(_config.mail.smtpTransport));
 
 // functions
 var formatSubject = function(str){
 	return _package.name + " :: " + str;
-}
+};
 
 var getBaseEmailConfig = function(){
 	return {
@@ -26,23 +26,23 @@ var getBaseEmailConfig = function(){
     to: "bulzeeb@gmail.com",
     subject: formatSubject('Forgot to enter a Subject'),
     text: "Forgot to enter text."
-  }
-}
+  };
+};
 
 var sendRawEmail = function(base){
 	transport.sendMail(base, function(error, info){
-    if(error){
-        console.error(error);
-    }
+		if(error){
+			console.error(error);  
+		}
 	});
-}
+};
 
 var sendOrderReminder = function(product){
 	var base = getBaseEmailConfig();
 	base.subject = formatSubject("Order Reminder");
-	base.text = "Hello! This is a reminder that "+product+" will need to be ordered soon."
+	base.text = "Hello! This is a reminder that "+product+" will need to be ordered soon.";
 	sendRawEmail(base);
-}
+};
 
 
 var INDEV = true;
@@ -54,7 +54,7 @@ var catalog = [
 
 // Sessions handler
 app.use(session({
-	secret: 'omg its rainbowdash',
+	secret: _config.express.secret,
 	resave:false,
 	saveUninitialized:false
 }));
@@ -90,13 +90,13 @@ app.all('/email', function (req, res) {
 // Any procedural stuff
 server.listen(3000);
 
-
-var date = new Date(2015, 5, 5, 16, 10, 0);
-
-if(date > new Date()){
-	console.log("scheduled for",date)
-	schedule.scheduleJob(date, function(){
-		console.log("sending email");
-		sendOrderReminder("Internets");
-	});
-}
+// Experimenting with Scheduler.
+// var date = new Date(2015, 5, 5, 16, 10, 0);
+//
+// if(date > new Date()){
+// 	console.log("scheduled for",date)
+// 	schedule.scheduleJob(date, function(){
+// 		console.log("sending email");
+// 		sendOrderReminder("Internets");
+// 	});
+// }
