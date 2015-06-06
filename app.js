@@ -44,13 +44,38 @@ var sendOrderReminder = function(product){
 	sendRawEmail(base);
 };
 
+var updateCatalog = function(obj){
+	var id = obj._id || 0; 
+	if(!id) return;
+	
+	for(var i=0;i<catalog.length;i++){
+		if(catalog[i]._id == id){
+			catalog[i] = obj; 
+			// TODO: this should probably be more like a propertywise copy. 
+			// assignment might fux with stuff later.
+			break;
+		}
+	}
+};
 
 var INDEV = true;
 
 var catalog = [
-	{name:"Protien Powder"},
-	{name:"CalMag"},
+	{
+		_id:1,
+		name:"Protien Powder"
+	},
+	{
+		_id:2,
+		name:"CalMag"
+	},
 ];
+
+// Because I am 13
+app.use(function (req, res, next) {
+  res.header("X-powered-by", "ur mom");
+  next();
+});
 
 // Sessions handler
 app.use(session({
@@ -70,22 +95,15 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static(__dirname + '/dist/public'));
 app.get('/', function (req, res) {
 	console.log(catalog);
-  res.render('index', { package: _package, INDEV:INDEV, catalog:catalog});
+	res.render('index', { package: _package, INDEV:INDEV, catalog:catalog});
 });
 
-app.get('/new', function (req, res) {
-	catalog.push({name:"Ponk"});
-	res.redirect('/');
+app.post('/saveitem', function (req, res) {
+	updateCatalog(req.body);
+	console.log(req.body);
+	res.sendStatus(200);
 });
 
-app.all('/email', function (req, res) {
-
-	sendOrderReminder("Malk");
-	req.session.hits = (req.session.hits || 0) + 1;
-	console.log("hits from this source",req.session.hits);
-	res.redirect('/');
-
-});
 
 // Any procedural stuff
 server.listen(3000);

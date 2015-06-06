@@ -4,12 +4,8 @@ html(lang="en")
 		title!=package.name 
 		link(rel="stylesheet",href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css")
 		link(rel="stylesheet",href="/css/#{package.name}.css")
-	body
+	body(data-catalog="#{JSON.stringify(catalog)}")
 		#container
-			each val in catalog
-				div.item
-					div.pad
-						span.name= val.name
 		if INDEV
 			script(src="//localhost:9000/livereload.js")
 		// Import main JS.

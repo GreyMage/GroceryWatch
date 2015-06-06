@@ -42,13 +42,12 @@ module.exports = function(grunt) {
     },
     concat: {
       options: {
-        // define a string to put between each file in the concatenated output
-        separator: '\n\n'
+        separator: '\n\n',
+		banner:";(function( window, undefined ){\n'use strict';\n\n",
+		footer:"\n\nif(typeof main != 'undefined')main();\n\n}(window));",
       },
       dist: {
-        // the files to concatenate
-        src: ['src/public/js/*.js'],
-        // the location of the resulting JS file
+        src: ['src/public/js/*.js','!src/public/js/index.js', 'src/public/js/index.js',],
         dest: 'dist/public/js/<%= pkg.name %>.js'
       }
     },
@@ -95,6 +94,7 @@ module.exports = function(grunt) {
 		}, 
 		options: { 
 			livereload: 9000,
+			debounceDelay: 1000,
 		},
     },
     stylus: {
