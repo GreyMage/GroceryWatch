@@ -1,3 +1,47 @@
+// This is a singleton "namespace global" event emitter type thing.
+// Its specifically for use within this namespace, and nothing is
+// really supposed to "extend" from it, its more of a pub/sub handler.
+
+var pubSub = (function(){
+	
+	var instance;
+	
+	function createInstance(){
+		var ns = {};
+
+		ns.channels = {};
+		
+		ns.pub = function(channel,value){
+			ns.channels[channel] = ns.channels[channel] || [];
+			ns.channels[channel].forEach(function(callback){
+				if(callback)callback(value);
+			});
+		};
+		
+		ns.sub = function(channel,callback){
+			ns.channels[channel] = ns.channels[channel] || [];
+			ns.channels[channel].push(callback);
+		};
+		
+		ns.unsub = function(channel, callback){
+			ns.channels[channel] = ns.channels[channel] || [];
+			var pos = ns.channels[channel].indexOf(callback);
+			if(!~pos)return;
+			ns.channels[channel].splice(pos,1);
+		};
+
+		return ns;
+	}
+	
+	return {
+		getInstance: function(){
+			if(!instance) instance = createInstance();
+			return instance;
+		}
+	};
+	
+})();
+
 // This is a personalized deferral object I made. 
 // I love it.
 
@@ -169,19 +213,41 @@ function fadeOut(el) {
 }
 
 // Simple little data-binding handler
-var createBoundField = function(object,property,elem){
+var createBoundElement = function(object,property,uniq,elem){
+
+	// get instance of pubsubber
+	var ps = pubSub.getInstance();
+	
+	// Create dom elem
 	var input = elem || ce("input");
-	var mutate = function(){
-		object[property] = input.value;
-	};
+
+	// If we hear the value changed, update our value.
+	var channel = "be_"+uniq+"_"+property;
+	ps.sub(channel,function(data){
+		object[property] = data;
+		if(typeof input.value != "undefined"){
+			input.value = data;
+		} else {
+			input.innerHTML = object[property];
+		}
+	});
 	
-	// Start it off right.
-	input.value = object[property];
+	if(typeof input.value != "undefined"){
 	
-	// watch the field
-	input.addEventListener("change",mutate);
-	input.addEventListener("keydown",mutate);
-	input.addEventListener("keyup",mutate);
+		var publish = function(){
+			ps.pub(channel,input.value);
+		};
+		
+		// Start it off right.
+		input.value = object[property];
+		
+		// watch the field, and publish any changes.
+		input.addEventListener("change",publish);
+		input.addEventListener("keyup",publish);
+		
+	} else {
+		input.innerHTML = object[property];
+	}
 	
 	return input;
 };

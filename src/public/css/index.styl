@@ -15,6 +15,9 @@ vendor(prop, args)
 theme-color = #5E9732
 font-color = #424242
 
+save-btn-size = 30px;
+save-btn-gutter = 10px;
+
 wallpaper-color = lighten(theme-color,80%)
 back-color = lighten(theme-color,50%)
 primary-font = 'Roboto', sans-serif 
@@ -30,7 +33,6 @@ body
 	
 	.item
 		float left
-		height 200px
 		width 50%
 		margin 10px 0
 		
@@ -38,4 +40,48 @@ body
 			margin 0 10px
 			background-color back-color
 			border-radius 10px
-			height 100%
+			position relative
+			padding-bottom save-btn-gutter+save-btn-size+save-btn-gutter
+			
+			.fields
+				padding 10px
+				
+				fieldset
+					color darken(theme-color,80%)
+					border-style none
+					
+					.fieldrow
+						float left
+						width 50%
+						
+						.fieldrowpad
+							margin 2px
+							padding 0
+						
+							label
+								background white
+								border-radius 10px 10px 0 0
+								padding 0 10px
+								margin-bottom -1px
+								position relative
+								top 1px
+						
+							input
+								width 100%
+								box-sizing border-box
+								font-size 1.2em
+								border 0
+								padding 5px
+					
+			
+			.save 
+				position absolute
+				bottom save-btn-gutter
+				left 0
+				width 100%
+				
+				button
+					height save-btn-size
+					display block
+					margin 0 auto
+					width 80%
