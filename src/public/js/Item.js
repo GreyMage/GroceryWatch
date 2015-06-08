@@ -1,8 +1,13 @@
-var Item = function(options,container){
+var Item = function(options,id,container){
 	if(!container) throw "dude where do i put this";
+	if(typeof id == "undefined") throw "gonna need an ID";
+	
 	this.attrs = {};
-	for(var i in options) this.attrs[i] = options[i];
 	this.container = container;
+	this.id = id;
+	
+	for(var i in options) this.attrs[i] = options[i];
+	
 	this.spawn();
 };
 
@@ -24,20 +29,55 @@ Item.prototype.spawn = function(){
 	fieldsDiv.appendChild(fieldsSet);
 	fieldsSet.appendChild(fieldsLegend);
 	// Add sweet-ass databound title to the legend
-	var dbtitle = createBoundElement(self.attrs,"name",self.attrs._id,ce("span"));
+	var dbtitle = createBoundElement({
+		object:self.attrs,
+		property:"name",
+		uniq:self.id,
+		elem:ce("span"),
+	});
 	fieldsLegend.appendChild(dbtitle);
 	
-	var createField = function(prop,labeltext,tag){
+	// Create Databound text fields
+	var createField = function(prop,labeltext,tag,readFunc,writeFunc){
 		tag = tag || "input";
 		var div = ce("div",{class:"fieldrow"}); fieldsSet.appendChild(div);
 		var pad = ce("div",{class:"fieldrowpad"}); div.appendChild(pad);
 		var label = ce("label",{},labeltext);  pad.appendChild(label);
-		var input = createBoundElement(self.attrs,prop,self.attrs._id,ce(tag,{class:"field"})); pad.appendChild(input);
-		
+		var input = createBoundElement({
+			object:self.attrs,
+			property:prop,
+			uniq:self.id,
+			elem:ce(tag,{class:"field"}),
+			readFunc:readFunc,
+			writeFunc:writeFunc,
+		}); 
+		pad.appendChild(input);
+	};
+
+	var padZ = function(number,to){
+		var n = ""+number;
+		while(n.length < to) n = "0" + n;
+		return n;
 	};
 	
-	createField("_id","Internal ID");
+	var handleDateRead = function(raw){
+		var d = new Date(raw);
+		if(isNaN(d.getTime())) {
+			console.log(d,"isnt a number",raw);
+			return raw;
+		}
+		console.log("parsed into date");
+		var out = d.getFullYear()+"-"+padZ(d.getUTCMonth()+1,2)+"-"+padZ(d.getUTCDate(),2);
+		return out;
+	};
+	var handleDateWrite = function(raw){
+		return "penis";
+	};
+	
 	createField("name","Name");
+	createField("restocked","Restocked",false,handleDateRead,handleDateWrite);
+	createField("restocked","Restocked",false,handleDateRead,handleDateWrite);
+	createField("restocked","Restocked",false,handleDateRead,handleDateWrite);
 	
 	// Spawn Stats
 	var stats = ce("div",{class:"stats"});
@@ -54,7 +94,17 @@ Item.prototype.spawn = function(){
 };
 
 Item.prototype.save = function(){
-	ajax("/saveitem","post",this.attrs).done(function(data){
+	var payload = {
+		id:this.id,
+		item:this.attrs
+	};
+	
+	ajax({
+		url:"/saveitem",
+		method: "post",
+		data:payload,
+		sendDataAsJSON:true,
+	}).done(function(data){
 		console.log(data);
 	});
 };

@@ -120,16 +120,61 @@ var postEncode = function(obj){
 	},[]).join('&');
 };
 
-// quick and dirty AJAX using my deferred object.
-var ajax = function(url, method, content){
+// Deep extend from http://youmightnotneedjquery.com/
+var deepExtend = function(out) {
+  out = out || {};
 
-	url = url || "/";
-	method = method || "get";
+  for (var i = 1; i < arguments.length; i++) {
+    var obj = arguments[i];
+
+    if (!obj)
+      continue;
+
+    for (var key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        if (typeof obj[key] === 'object')
+          deepExtend(out[key], obj[key]);
+        else
+          out[key] = obj[key];
+      }
+    }
+  }
+
+  return out;
+};
+
+// Deep extend from http://youmightnotneedjquery.com/
+var extend = function(out) {
+  out = out || {};
+
+  for (var i = 1; i < arguments.length; i++) {
+    if (!arguments[i])
+      continue;
+
+    for (var key in arguments[i]) {
+      if (arguments[i].hasOwnProperty(key))
+        out[key] = arguments[i][key];
+    }
+  }
+
+  return out;
+};
+
+// quick and dirty AJAX using my deferred object.
+var ajax = function(options){
+
+	var config = {
+		url:"/",
+		method:"get",
+		data:false,
+		sendDataAsJSON:false,
+	};
+	config = extend(config,options);
 	
 	var def = deferred();
 	
 	var request = new XMLHttpRequest();
-	request.open(method, url, true);
+	request.open(config.method, config.url, true);
 
 	request.onload = function() {
 	  if (request.status >= 200 && request.status < 400) {
@@ -145,14 +190,17 @@ var ajax = function(url, method, content){
 	  def.reject(false,request);
 	};
 	
-	if(content){
-		request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
-		request.send(postEncode(content));
+	if(config.data){
+		if(config.sendDataAsJSON){
+			request.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
+			request.send(JSON.stringify(config.data));
+		} else {
+			request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
+			request.send(postEncode(config.data));
+		}
 	} else {
 		request.send();
 	}
-	
-	
 	
 	return def.promise();
 
@@ -213,22 +261,42 @@ function fadeOut(el) {
 }
 
 // Simple little data-binding handler
-var createBoundElement = function(object,property,uniq,elem){
+var createBoundElement = function(options){
+
+	var config = {
+		object:"/",
+		property:"get",
+		uniq:false,
+		elem:false,
+		readFunc:false,
+		writeFunc:false,
+	};
+	config = extend(config,options);
 
 	// get instance of pubsubber
 	var ps = pubSub.getInstance();
 	
 	// Create dom elem
-	var input = elem || ce("input");
+	var input = config.elem || ce("input");
+	
+	var getVal = function(){
+		if(config.readFunc) return config.readFunc(config.object[config.property]);
+		return config.object[config.property];
+	};
+	var setVal = function(raw){
+		if(config.writeFunc) config.object[config.property] = config.writeFunc(raw);
+		config.object[config.property] = raw;
+	};
 
 	// If we hear the value changed, update our value.
-	var channel = "be_"+uniq+"_"+property;
+	var channel = "be_"+config.uniq+"_"+config.property;
 	ps.sub(channel,function(data){
-		object[property] = data;
+		setVal(data);
 		if(typeof input.value != "undefined"){
-			input.value = data;
+			input.value = getVal();
 		} else {
-			input.innerHTML = object[property];
+			input.innerHTML = "";
+			input.appendChild(document.createTextNode(getVal()));
 		}
 	});
 	
@@ -239,15 +307,19 @@ var createBoundElement = function(object,property,uniq,elem){
 		};
 		
 		// Start it off right.
-		input.value = object[property];
+		input.value = getVal();
 		
 		// watch the field, and publish any changes.
 		input.addEventListener("change",publish);
 		input.addEventListener("keyup",publish);
 		
 	} else {
-		input.innerHTML = object[property];
+		input.innerHTML = "";
+		input.appendChild(document.createTextNode(getVal()));
 	}
+	
+	// Finally, run the initial var through the provided read func if nessicary.
+	setVal(getVal());
 	
 	return input;
 };

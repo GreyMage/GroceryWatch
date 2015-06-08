@@ -10,6 +10,11 @@ var bodyParser = require('body-parser');
 var session = require('express-session');
 var schedule = require('node-schedule');
 
+var Datastore = require('nedb');
+var userdb = new Datastore({ filename: 'db/users', autoload: true });
+userdb.persistence.setAutocompactionInterval(1000 * 60 * 10);
+
+
 // Mail Setup
 var nodemailer = require('nodemailer');
 var smtpTransport = require('nodemailer-smtp-transport');
@@ -22,11 +27,11 @@ var formatSubject = function(str){
 
 var getBaseEmailConfig = function(){
 	return {
-    from: _package.name + " <noreply@cades.me>",
-    to: "bulzeeb@gmail.com",
-    subject: formatSubject('Forgot to enter a Subject'),
-    text: "Forgot to enter text."
-  };
+		from: _package.name + " <noreply@cades.me>",
+		to: "bulzeeb@gmail.com",
+		subject: formatSubject('Forgot to enter a Subject'),
+		text: "Forgot to enter text."
+	};
 };
 
 var sendRawEmail = function(base){
@@ -44,38 +49,14 @@ var sendOrderReminder = function(product){
 	sendRawEmail(base);
 };
 
-var updateCatalog = function(obj){
-	var id = obj._id || 0; 
-	if(!id) return;
-	
-	for(var i=0;i<catalog.length;i++){
-		if(catalog[i]._id == id){
-			catalog[i] = obj; 
-			// TODO: this should probably be more like a propertywise copy. 
-			// assignment might fux with stuff later.
-			break;
-		}
-	}
-};
-
 var INDEV = true;
-
-var catalog = [
-	{
-		_id:1,
-		name:"Protien Powder"
-	},
-	{
-		_id:2,
-		name:"CalMag"
-	},
-];
 
 // Because I am 13
 app.use(function (req, res, next) {
   res.header("X-powered-by", "ur mom");
   next();
 });
+
 
 // Sessions handler
 app.use(session({
@@ -84,24 +65,67 @@ app.use(session({
 	saveUninitialized:false
 }));
 
+
+// Try and keep the user object from their session available at all times.
+app.use(function (req, res, next) {
+	req.session.user = req.session.user || {};
+	req.session.user.id = req.session.user.id || "5pyOTPCU9ryfilkY";
+	
+	userdb.findOne({ _id: req.session.user.id }, function (err, user) {
+		req.user = user || {};
+		req._user = JSON.stringify(req.user);
+		next();
+	});
+});
+
+
 // Template Engine
 app.set('views', __dirname + '/dist/views');
 app.set('view engine', 'jade');
 
 // Setup Post-parser
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 
 // Routes
 app.use(express.static(__dirname + '/dist/public'));
-app.get('/', function (req, res) {
-	console.log(catalog);
+
+// Specific Pages
+app.get('/', function (req, res, next) {
+	console.log("Hello,",req.user);
+	var catalog = req.user.catalog || [];
+	catalog[0].now  = new Date();
 	res.render('index', { package: _package, INDEV:INDEV, catalog:catalog});
+	next();
 });
 
-app.post('/saveitem', function (req, res) {
-	updateCatalog(req.body);
-	console.log(req.body);
+app.post('/saveitem', function (req, res, next) {
+
+	var id = req.body.id;
+	var item = req.body.item || false;
+	console.log(typeof id != "undefined" , item);
+	if(typeof id != "undefined" && item){
+		console.log("setting");
+		req.user.catalog[id] = item;
+	}
+	
 	res.sendStatus(200);
+	next();
+	
+});
+
+// Finish up the application by checking the user for modifications, and saving back to the DB if needed.
+app.use(function (req, res, next) {
+	if(JSON.stringify(req.user) == req._user) {
+		// We're done here
+		console.log("no changes");
+		next();
+		return;
+	}
+	console.log("saving modified user");
+	userdb.update({ _id: req.user._id }, req.user, {}, function (err, numReplaced) {
+		if(err) console.log(err);
+		next();
+	});
 });
 
 
