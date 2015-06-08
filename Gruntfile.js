@@ -39,6 +39,12 @@ module.exports = function(grunt) {
         src: '**',
         dest: 'dist/views',
       },
+      vendor: {
+        expand: true,
+        cwd: 'vendor',
+        src: '**/dist/**/*.min.js',
+        dest: 'src/public/js/vendor/',
+      },
     },
     concat: {
       options: {
@@ -47,7 +53,7 @@ module.exports = function(grunt) {
 		footer:"\n\nif(typeof main != 'undefined')main();\n\n}(window));",
       },
       dist: {
-        src: ['src/public/js/*.js','!src/public/js/index.js', 'src/public/js/index.js',],
+        src: ['src/public/js/vendor/**/*.js', 'src/public/js/*.js' ,'!src/public/js/index.js', 'src/public/js/index.js',],
         dest: 'dist/public/js/<%= pkg.name %>.js'
       }
     },
@@ -65,7 +71,7 @@ module.exports = function(grunt) {
     },
     jshint: {
       // define the files to lint
-      files: ['Gruntfile.js', 'src/**/*.js', '<%= jasmine.options.specs %>', 'app.js'],
+      files: ['Gruntfile.js', 'src/**/*.js', '!src/**/vendor/**', '<%= jasmine.options.specs %>', 'app.js'],
       // configure JSHint (documented at http://www.jshint.com/docs/)
       options: {
         // more options here if you want to override JSHint defaults
@@ -92,6 +98,10 @@ module.exports = function(grunt) {
 			files: ['config.json'],
 			tasks: ['encrypt'],
 		}, 
+		vendor:{
+			files: ['vendor/*/dist/**/*.min.js'],
+			tasks: ['copy:vendor'],
+		},
 		options: { 
 			livereload: 9000,
 			debounceDelay: 1000,

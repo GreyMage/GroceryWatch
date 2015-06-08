@@ -1,0 +1,3 @@
+[submodule "vendor/KukriJS"]
+	path = vendor/KukriJS
+	url = https://github.com/GreyMage/KukriJS.git
